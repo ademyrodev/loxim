@@ -1,0 +1,7 @@
+# Ignore the executable
+loxem
+
+# Ignore the .vscode folder
+.vscode/
+
+main.loxm
