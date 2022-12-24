@@ -7,4 +7,8 @@ Right now, everything that has been implemented is:
 
 * The VM. (Even thought it's not complete)
 * The Scanner (it's complete!)
-* Currently implementing the parser/compiler.
+* The compiler (it can successfully compile and parse mathematical expressions)
+
+Run ``./loxim`` and have fun with the shell.
+
+If you encounter an issue, please report it in **``Issues``**.
