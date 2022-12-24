@@ -1,5 +1,6 @@
 # Ignore the executable
 loxim
+loxim.exe 
 
 # Ignore the .vscode folder
 .vscode/

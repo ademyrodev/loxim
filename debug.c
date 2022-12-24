@@ -68,6 +68,7 @@ int disassembleInstruction(Chunk *chunk, int offset) {
     // Print the line number
     printf(" %4d ", line);
   }
+
   // Example:
   //
   // 0000 1 OP_RETURN

@@ -22,6 +22,9 @@ static void repl() {
       break;
     }
 
+    // Replace the trailing newline with a \0.
+    line[strlen(line) - 1] = '\0';
+
     // Pass it to our VM.
     interpret(line);
   }
