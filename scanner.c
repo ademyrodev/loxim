@@ -279,8 +279,10 @@ static Token string() {
     // (Yes, any Lox code is valid in Loxim, except for)
     // (a few edge cases (try declaring a local and))
     // ((not using it))
-    if (peek() == '\n')
+    if (peek() == '\n') {
+      scanner.currentCol = 0;
       scanner.line++;
+    }
 
     // String interpolation.
     if (peek() == '$') {
