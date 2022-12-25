@@ -37,7 +37,20 @@ void freeValueArray(ValueArray *array) {
 }
 
 void printValue(Value value) {
-  // For now, since we only support doubles,
-  // printValue() is going to remain simple.  
-  printf("%g", value);
+  switch (value.type) {
+    case VAL_NUMBER:  
+      printf("%g", AS_NUMBER(value));
+      break;
+
+    case VAL_BOOL:
+      // Without this ternary operators, Loxim would
+      // print either 1 or 0. We don't want that - we want
+      // true or false. 
+      printf(AS_BOOL(value) ? "true" : "false");
+      break;
+
+    case VAL_NIL:
+      printf("nil"); 
+      break;
+  }
 }

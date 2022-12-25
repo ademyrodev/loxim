@@ -3,6 +3,9 @@
 
 #include "vm.h"
 
+// Useful for runtimeError() in VM.
+char *getOffendingLine(int);
+
 // Compiles a stream of characters.
 bool compile(char *, Chunk *);
 
