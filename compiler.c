@@ -114,6 +114,8 @@ static void errorAt(Token *token, char *message) {
   // Since we added enough spaces, we can now just print the ^-- Here. message.
   fprintf(stderr, "^-- Here.\n");
 
+  free(line);
+
   parser.hadError = true;
 }
 
@@ -190,7 +192,7 @@ static void endCompiler(int col) {
 
 static void number() {
   double value = strtod(parser.previous.start, NULL);
-  emitConstant(value, parser.previous.column);
+  emitConstant(NUMBER_VAL(value), parser.previous.column);
 }
 
 // Recursive descent parsing.
@@ -201,6 +203,8 @@ static void expression();
 static void term();
 
 static void factor();
+
+static void literal();
 
 // To group expressions around parentheses
 static void grouping();
@@ -248,17 +252,42 @@ static void factor() {
     grouping();
     return;
   }
-
-  if (token.type == TOKEN_MINUS || token.type == TOKEN_PLUS) {
+  
+  if (token.type == TOKEN_BANG || token.type == TOKEN_MINUS || token.type == TOKEN_PLUS) {
     advance();
     unary();
     return;
   }
 
-  // None of the cases match - must be a syntax error.
-  // The compiler will find himself in here if he has to deal
-  // with an expression such as: "1 + "
-  errorAtCurrent("Expected an expression.");
+  // Nothing matches - must be a literal.
+  literal();
+}
+
+static void literal() {
+  switch (parser.current.type) {
+    case TOKEN_TRUE:
+      emitByte(OP_TRUE, parser.current.column);
+      advance();
+      break;
+
+    case TOKEN_FALSE:
+      emitByte(OP_FALSE, parser.current.column);
+      advance();
+      break;
+
+    case TOKEN_NIL:
+      emitByte(OP_NIL, parser.current.column);
+      advance();
+      break;
+
+    default:
+      // TODO: move numbers to this function.
+      // None of the cases match - must be a syntax error.
+      // The compiler will find himself in here if he has to deal
+      // with an expression such as: "1 + "
+      errorAtCurrent("Expected an expression.");
+      return;
+  }
 }
 
 static void grouping() {

@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "common.h"
@@ -15,6 +16,39 @@ static void resetStack() {
   vm.stackTop = vm.stack;
 }
 
+static void runtimeError(char *format, ...) {
+  // Using variadic arguments to format *format.
+  // Make the list stuff
+  va_list args;
+  va_start(args, format);
+  
+  // Print the format string
+  fprintf(stderr, "Runtime error: ");
+  vfprintf(stderr, format, args);
+
+  // Get the line and column
+  size_t instruction = vm.ip - vm.chunk->code - 1;
+  int lineNumber = getLine(vm.chunk, instruction);
+  int column = vm.chunk->columns[instruction];
+
+  // Print the line info
+  fprintf(stderr, "\nLine %d, column %d", lineNumber, column);
+  fputs("\n", stderr);
+
+  // Retrieve the line where the error occured
+  // Note: this function is defined in compiler.c
+  char *line = getOffendingLine(lineNumber);
+
+  // Print it
+  fprintf(stderr, "%5d | %s\n", lineNumber, line);
+  // Show the caret (^-- Here.)
+  fprintf(stderr, "%*s", 7 + column, "");
+  //                     ^^^^^^^^^^-- distance - amount of spaces.
+
+  // Since we added enough spaces, we can now just print the ^-- Here. message.
+  fprintf(stderr, "^-- Here.\n");
+}
+
 // Stack functions.
 void push(Value value) {
   *vm.stackTop = value;
@@ -28,6 +62,10 @@ Value pop() {
   return *vm.stackTop;
 }
 
+Value peek(int distance) {
+  return vm.stackTop[-1 - distance];
+}
+
 void initVM() {
   resetStack();
 }
@@ -39,11 +77,15 @@ void freeVM() {
 static InterpretResult run() {
 #define READ_BYTE()     (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-#define BINARY_OP(op) \
+#define BINARY_OP(valueType, op) \
   do { \
-    double b = pop(); \
-    double a = pop(); \
-    push(a op b); \
+    if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+      runtimeError("Operands must be numbers."); \
+      return INTERPRET_COMPILE_ERROR; \
+    } \
+    double b = AS_NUMBER(pop()); \
+    double a = AS_NUMBER(pop()); \
+    push(valueType(a op b)); \
   } while (false)
 
   while (1) {
@@ -74,30 +116,48 @@ static InterpretResult run() {
         break;
       }
 
+      // Dedicated constant instructions.
+      case OP_NIL:
+        push(NIL_VAL);
+        break;
+
+      case OP_TRUE:
+        push(BOOL_VAL(true));
+        break;
+
+      case OP_FALSE:
+        push(BOOL_VAL(false));
+        break;
+
       case OP_NEGATE:
         // Negate the top of the stack and return
         // it.
+        if (!IS_NUMBER(peek(0))) {
+          runtimeError("Operand must be a number.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
         // Offsetting stackTop by -1 because it always
         // points to the next slot to be occupied,
         // if that makes sense.
-        vm.stackTop[-1] = -vm.stackTop[-1];
+        vm.stackTop[-1] = NUMBER_VAL(-AS_NUMBER(vm.stackTop[-1]));
         break;
 
       // Binary operations.
       case OP_ADD:
-        BINARY_OP(+);
+        BINARY_OP(NUMBER_VAL, +);
         break;
 
       case OP_SUBTRACT:
-        BINARY_OP(-);
+        BINARY_OP(NUMBER_VAL, -);
         break;
 
       case OP_MULTIPLY:
-        BINARY_OP(*);
+        BINARY_OP(NUMBER_VAL, *);
         break;
 
       case OP_DIVIDE:
-        BINARY_OP(/);
+        BINARY_OP(NUMBER_VAL, /);
         break;
 
       case OP_RETURN:
